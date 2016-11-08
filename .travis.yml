@@ -10,8 +10,21 @@ addons:
     packages:
     - shellcheck
 
+env:
+  global:
+    - CF_DOMAIN=test.org
+    - CF_EMAIL=getssl_test_account@mailinator.com
+    - CF_KEY=845830354648e4317e1541002f4b778d07b41
+
+before_script:
+  - wget -O test/assert.sh https://raw.github.com/lehmannro/assert.sh/v1.1/assert.sh
+  - chmod +x test/assert.sh
+
 script:
- - bash -c 'shopt -s globstar; shellcheck getssl'
+  - shellcheck getssl
+  - shellcheck dns_scripts/dns_add_cloudflare
+  - shellcheck dns_scripts/dns_del_cloudflare
+  - cd test && ./test.bash
 
 matrix:
   fast_finish: true
