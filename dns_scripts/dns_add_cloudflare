@@ -4,7 +4,6 @@ email=${CF_EMAIL:-''}
 key=${CF_KEY:-''}
 
 # This script adds a token to cloudflare DNS for the ACME challenge
-# usage dns_add_cloudflare "domain name"  "token"
 # return codes are;
 # 0 - success
 # 1 - error in input parameters
@@ -16,18 +15,25 @@ API='https://api.cloudflare.com/client/v4/zones'
 curl_params=(-H "X-Auth-Email: $email" -H "X-Auth-Key: $key" -H 'Content-Type: application/json')
 
 # check initial parameters
-[[ -z "$fulldomain" ]] && err='DNS script requires full subdomain name as first parameter\n'
-[[ ! "$token" ]] && err+='DNS script requires ACME challenge token as second parameter\n'
-[[ "$CF_EMAIL" != *?@?*.?* ]] && err+='CF_EMAIL parameter not set to Cloudflare user email\n'
-[[ ! "$CF_KEY" ]] && err+='CF_KEY parameter not set to Cloudflare user API key\n'
+[[ "$fulldomain" =~ ^([[:alnum:]][-[:alnum:]]*\.)+[-[:alnum:]]{2,20}$ ]] \
+  || err='Domain name missing\n'
+[[ "$token" ]] || err+='ACME challenge token missing\n'
+[[ "$CF_EMAIL" == *?@?*.?* ]] || err+='CF_EMAIL parameter not set to Cloudflare user email\n'
+[[ "$CF_KEY" =~ [[:xdigit:]]{37} ]] || err+='CF_KEY parameter not set to Cloudflare user API key\n'
 if [[ "$err" ]]; then
-  echo -ne "Error:\n$err"
+  echo -ne "Error: wrong or missing parameters\nUsage: ${0##*/} <domain name> <ACME token>\n$err"
   exit 1
 fi
 
 # get a list of all domain names from cloudflare
 # If you have a lot, you may need add "&page=1&per_page=1000" and/or "&status=active"
 resp=$(curl --silent "${curl_params[@]}" "$API")
+if [[ "${resp// }" == *'"success":false'* ]]; then
+  re='"message":"([^"]+)"'; [[ "$resp" =~ $re ]]
+  echo "Error reading domains from Cloudflare: ${BASH_REMATCH[1]:-unknown error - $resp}"
+  exit 3
+fi
+
 re='"result":\[(([^][]*\[[^][]*])*[^][]*)]' # find result section
 [[ "${resp// }" =~ $re ]] && resp="${BASH_REMATCH[1]}"
 
@@ -42,23 +48,22 @@ while [[ "$resp" ]]; do
   while [[ "$first" =~ (.*)[\[\{][^]\{\}[]*[\]\}](.*) ]]; do
     first="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
   done
-  re='"name":"([^"]*)"'
+  re='"name":"([-\.[:alnum:]]+)"'
   [[ "$first" =~ $re ]] && domains=("${domains[@]}" "${BASH_REMATCH[1]}")
   re='"id":"([^"]*)"'
   [[ "$first" =~ $re ]] && ids=("${ids[@]}" "${BASH_REMATCH[1]}")
 done
 
 # select right cloudflare domain (longest one)
-domain=""$fulldomain."" # add dot at the end
+domain=$fulldomain
 # shellcheck disable=SC2076
-while [[ "$domain" && ! "${domains[@]/#/@}" == *"@${domain%?}"* ]]; do
+while [[ "$domain" == *.* && ! "${domains[@]/#/@}" == *"@$domain"* ]]; do
   domain=${domain#*.} # try shorter one
 done
-if [[ ! "$domain" ]]; then
+if [[ "$domain" != *.* ]]; then
   echo "Domain for $fulldomain not found on Cloudflare account"
   exit 3
 fi
-domain=${domain%?} # strip added dot
 # read id for domain
 for i in "${!domains[@]}"; do [[ ${domains[i]} == "$domain" ]] && break; done
 domain_id="${ids[i]}"
@@ -68,9 +73,8 @@ txt_record="_acme-challenge.${fulldomain%.$domain}"
 resp=$(curl --silent "${curl_params[@]}" -X POST "$API/$domain_id/dns_records" \
   --data "{\"type\":\"TXT\",\"name\":\"$txt_record\",\"content\":\"$token\",\"ttl\":300}")
 
-# if it failed (success:false) then give error message
 if [[ "${resp// }" == *'"success":false'* ]]; then
-  # code 81057 = The record already exists.
+  # Only warn if code 81057 returned = The record already exists.
   if [[ "${resp// }" == *'"code":81057'[^0-9]* ]]; then
     echo 'DNS challenge token already exists'
   else

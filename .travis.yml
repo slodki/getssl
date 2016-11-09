@@ -1,30 +1,33 @@
 language: bash
-
-# Use container-based infrastructure for quicker build start-up
-sudo: false
+#sudo: false # Use container-based infrastructure for quicker build start-up
 
 addons:
   apt:
-    sources:
-    - debian-sid    # Grab shellcheck from the Debian repo (o_O)
-    packages:
-    - shellcheck
+    sources: [ debian-sid ]   # Grab shellcheck from the Debian repo (o_O)
+    packages: [ shellcheck ]
 
 env:
   global:
     - CF_DOMAIN=test.org
     - CF_EMAIL=getssl_test_account@mailinator.com
     - CF_KEY=845830354648e4317e1541002f4b778d07b41
+    - BASHES="bash2.05b bash3.0.16 bash3.2.48 bash4.2.45"
+
+before_install:
+  - sudo add-apt-repository ppa:agriffis/bashes -y
+  - sudo apt-get update -qq
+  - sudo apt-get install -y $BASHES
 
 before_script:
   - wget -O test/assert.sh https://raw.github.com/lehmannro/assert.sh/v1.1/assert.sh
-  - chmod +x test/assert.sh
+  - chmod +x test/*.*sh
+  - curl --version
+  - test/prepare_test.org.bash
 
 script:
-  - shellcheck getssl
-  - shellcheck dns_scripts/dns_add_cloudflare
-  - shellcheck dns_scripts/dns_del_cloudflare
-  - cd test && ./test.bash
-
-matrix:
-  fast_finish: true
+  - shellcheck getssl dns_scripts/dns_???_* test/*.bash
+  - cd dns_scripts; BVER=bash ../test/cf_tests.bash
+  - BVER=bash4.2.45 ../test/cf_tests.bash
+  - BVER=bash3.2.48 ../test/cf_tests.bash
+#  - BVER=bash3.0.16 ../test/cf_tests.bash
+#  - BVER=bash2.05b ../test/cf_tests.bash
