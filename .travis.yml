@@ -1,9 +1,8 @@
 language: bash
-#sudo: false # Use container-based infrastructure for quicker build start-up
 
 addons:
   apt:
-    sources: [ debian-sid ]   # Grab shellcheck from the Debian repo (o_O)
+    sources: [ debian-sid ] # Grab shellcheck from the Debian repo (o_O)
     packages: [ shellcheck ]
 
 env:
@@ -11,12 +10,12 @@ env:
     - CF_DOMAIN=test.org
     - CF_EMAIL=getssl_test_account@mailinator.com
     - CF_KEY=845830354648e4317e1541002f4b778d07b41
-    - BASHES="bash2.05b bash3.0.16 bash3.2.48 bash4.2.45"
 
 before_install:
+  - sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 6476F1D05BEAD805020C852233FED702F5751EC8
   - sudo add-apt-repository ppa:agriffis/bashes -y
   - sudo apt-get update -qq
-  - sudo apt-get install -y $BASHES
+  - sudo apt-get install -y bash2.05b bash3.0.16 bash3.2.48 bash4.2.45
 
 before_script:
   - wget -O test/assert.sh https://raw.github.com/lehmannro/assert.sh/v1.1/assert.sh
