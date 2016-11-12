@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 echo "Testing with Bash version: $BASH_VERSION"
+echo "Testing with curl version: $(v=$(curl -V); echo "${v%%?Protocols:*}")"
+
 # shellcheck source=/dev/null
 . ../test/assert.sh
 
