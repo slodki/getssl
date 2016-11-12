@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
-echo "Testing with Bash version: $BASH_VERSION"
-echo "Testing with curl version: $(v=$(curl -V); echo "${v%%?Protocols:*}")"
+echo "Testing with bash $BASH_VERSION"
+echo "Testing with $(v=$(curl -V); echo "${v%%?Protocols:*}")"
 
 # shellcheck source=/dev/null
 . ../test/assert.sh
@@ -19,13 +19,15 @@ assert_raises "CF_EMAIL=we.org ./dns_add_cloudflare a.$CF_DOMAIN a" 1
 assert_raises "CF_KEY=123 ./dns_add_cloudflare a.$CF_DOMAIN a" 1
 assert_raises "CF_KEY=12345678901234567890123456789012456w ./dns_add_cloudflare a.$CF_DOMAIN a" 1
 
-assert "CF_EMAIL=w@e.org ./dns_add_cloudflare a.$CF_DOMAIN a" \
-  'Error reading domains from Cloudflare: Unknown X-Auth-Key or X-Auth-Email'
-assert_raises "CF_EMAIL=w@e.org ./dns_add_cloudflare a.$CF_DOMAIN a" 3
+# skip tests with wrong AUTH to bypass CF error 'Max auth failures. Please wait' on next connections
 
-assert "CF_KEY=${CF_KEY%???}000 ./dns_add_cloudflare a.$CF_DOMAIN a" \
-  'Error reading domains from Cloudflare: Unknown X-Auth-Key or X-Auth-Email'
-assert_raises "CF_KEY=${CF_KEY%???}000 ./dns_add_cloudflare a.$CF_DOMAIN a" 3
+#assert "CF_EMAIL=w@e.org ./dns_add_cloudflare a.$CF_DOMAIN a" \
+#  'Error reading domains from Cloudflare: Unknown X-Auth-Key or X-Auth-Email'
+#assert_raises "CF_EMAIL=w@e.org ./dns_add_cloudflare a.$CF_DOMAIN a" 3
+
+#assert "CF_KEY=${CF_KEY%???}000 ./dns_add_cloudflare a.$CF_DOMAIN a" \
+#  'Error reading domains from Cloudflare: Unknown X-Auth-Key or X-Auth-Email'
+#assert_raises "CF_KEY=${CF_KEY%???}000 ./dns_add_cloudflare a.$CF_DOMAIN a" 3
 
 assert_end dns_add_cloudflare params
 

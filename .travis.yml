@@ -17,14 +17,15 @@ env:
 
 before_install:
   - docker pull -a bash
+  - wget -O test/assert.sh https://raw.github.com/lehmannro/assert.sh/v1.1/assert.sh
 
 before_script:
-  - wget -O test/assert.sh https://raw.github.com/lehmannro/assert.sh/v1.1/assert.sh
   - chmod +x test/*.*sh
   - test/prepare_test.org.bash
+  - shellcheck getssl dns_scripts/dns_???_* test/*.bash test/run_docker.sh
 
 script:
-  - shellcheck getssl dns_scripts/dns_???_* test/*.bash
+  - test/run_docker.sh bash:latest
   - test/run_docker.sh bash:4.4
   - test/run_docker.sh bash:4.3
   - test/run_docker.sh bash:4.2
@@ -33,3 +34,4 @@ script:
   - test/run_docker.sh bash:3.2
   - test/run_docker.sh bash:3.1
   - test/run_docker.sh bash:3.0
+# not compatible with bash <3.0: =~ operator is required
