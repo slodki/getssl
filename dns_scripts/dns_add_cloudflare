@@ -15,11 +15,12 @@ API='https://api.cloudflare.com/client/v4/zones'
 curl_params=(-H "X-Auth-Email: $email" -H "X-Auth-Key: $key" -H 'Content-Type: application/json')
 
 # check initial parameters
-[[ "$fulldomain" =~ ^([[:alnum:]][-[:alnum:]]*\.)+[-[:alnum:]]{2,20}$ ]] \
-  || err='Domain name missing\n'
+re='^([[:alnum:]][-[:alnum:]]*\.)+[-[:alnum:]]{2,20}$' # as defined in API v4
+[[ "$fulldomain" =~ $re ]] || err='Domain name missing\n'
 [[ "$token" ]] || err+='ACME challenge token missing\n'
 [[ "$CF_EMAIL" == *?@?*.?* ]] || err+='CF_EMAIL parameter not set to Cloudflare user email\n'
-[[ "$CF_KEY" =~ [[:xdigit:]]{37} ]] || err+='CF_KEY parameter not set to Cloudflare user API key\n'
+re='[[:xdigit:]]{37}'
+[[ "$CF_KEY" =~ $re ]] || err+='CF_KEY parameter not set to Cloudflare user API key\n'
 if [[ "$err" ]]; then
   echo -ne "Error: wrong or missing parameters\nUsage: ${0##*/} <domain name> <ACME token>\n$err"
   exit 1
@@ -45,7 +46,8 @@ while [[ "$resp" ]]; do
   resp="${BASH_REMATCH[3]}" # remaining sections
 
   # remove json subsections - leave only domain level
-  while [[ "$first" =~ (.*)[\[\{][^]\{\}[]*[\]\}](.*) ]]; do
+  re='(.*)[\[\{][^]\{\}[]*[\]\}](.*)'
+  while [[ "$first" =~ $re ]]; do
     first="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
   done
   re='"name":"([-\.[:alnum:]]+)"'
