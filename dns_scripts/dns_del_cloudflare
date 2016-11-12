@@ -82,7 +82,7 @@ i=1
 while [ $i -lt "$NumParts" ]; do
   testdomain="${dnarray[i-1]}"
   for ((j=i; j<NumParts; j++)); do
-    testdomain+=".${dnarray[j]}"
+    testdomain="$testdomain.${dnarray[j]}"
   done
   # loop through domains at cloudflare
   for k in "${!domains[@]}"; do
@@ -103,7 +103,7 @@ fi
 
 curl_request="$API/$domain_id/dns_records?type=TXT&name=_acme-challenge.$fulldomain"
 if [[ ! -z "$token" ]]; then # if token specified, then use it
-  curl_request+="&content=$token"
+  curl_request="$curl_request&content=$token"
 fi
 resp=$(curl --silent "${curl_params[@]}" -X GET "$curl_request")
 

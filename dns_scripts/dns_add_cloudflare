@@ -17,10 +17,10 @@ curl_params=(-H "X-Auth-Email: $email" -H "X-Auth-Key: $key" -H 'Content-Type: a
 # check initial parameters
 re='^([[:alnum:]][-[:alnum:]]*\.)+[-[:alnum:]]{2,20}$' # as defined in API v4
 [[ "$fulldomain" =~ $re ]] || err='Domain name missing\n'
-[[ "$token" ]] || err+='ACME challenge token missing\n'
-[[ "$CF_EMAIL" == *?@?*.?* ]] || err+='CF_EMAIL parameter not set to Cloudflare user email\n'
+[[ "$token" ]] || err="${err}ACME challenge token missing\n"
+[[ "$CF_EMAIL" == *?@?*.?* ]] || err="${err}CF_EMAIL parameter not set to Cloudflare user email\n"
 re='[[:xdigit:]]{37}'
-[[ "$CF_KEY" =~ $re ]] || err+='CF_KEY parameter not set to Cloudflare user API key\n'
+[[ "$CF_KEY" =~ $re ]] || err="${err}CF_KEY parameter not set to Cloudflare user API key\n"
 if [[ "$err" ]]; then
   echo -ne "Error: wrong or missing parameters\nUsage: ${0##*/} <domain name> <ACME token>\n$err"
   exit 1
