@@ -1,4 +1,8 @@
 language: bash
+sudo: required
+
+services:
+  - docker
 
 addons:
   apt:
@@ -12,21 +16,15 @@ env:
     - CF_KEY=845830354648e4317e1541002f4b778d07b41
 
 before_install:
-  - sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 6476F1D05BEAD805020C852233FED702F5751EC8
-  - sudo add-apt-repository ppa:agriffis/bashes -y
-  - sudo apt-get update -qq
-  - sudo apt-get install -y bash2.05b bash3.0.16 bash3.2.48 bash4.2.45
+  - docker pull -a bash
 
 before_script:
   - wget -O test/assert.sh https://raw.github.com/lehmannro/assert.sh/v1.1/assert.sh
   - chmod +x test/*.*sh
-  - curl --version
   - test/prepare_test.org.bash
+  - pwd
 
 script:
   - shellcheck getssl dns_scripts/dns_???_* test/*.bash
-  - cd dns_scripts; BVER=bash ../test/cf_tests.bash
-  - BVER=bash4.2.45 ../test/cf_tests.bash
-  - BVER=bash3.2.48 ../test/cf_tests.bash
-#  - BVER=bash3.0.16 ../test/cf_tests.bash
-#  - BVER=bash2.05b ../test/cf_tests.bash
+#  - docker run -it --rm -v 
+#  - BVER=bash4.2.45 ../test/cf_tests.bash
